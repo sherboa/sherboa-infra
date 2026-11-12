@@ -1,0 +1,5 @@
+# Example configuration for the Terraform state backend bootstrap.
+
+aws_region       = "us-east-1"
+project_name     = "sherboa"
+state_bucket_name = "sherboa-terraform-state-ACCOUNT_ID-us-east-1"
