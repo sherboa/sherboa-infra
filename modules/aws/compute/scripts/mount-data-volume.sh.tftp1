@@ -1,0 +1,178 @@
+
+#!/usr/bin/env bash
+
+# ==============================================================================
+# Sherboa Infrastructure — AWS Compute Module
+# File: mount-data-volume.sh.tftpl
+# Description: Identifies, initializes (if empty), and mounts the persistent
+#              EBS data volume used by Sherboa.
+# ==============================================================================
+
+set -Eeuo pipefail
+
+# ------------------------------------------------------------------------------
+# Configuration
+# ------------------------------------------------------------------------------
+
+DATA_VOLUME_ID="${data_volume_id}"
+MOUNT_POINT="/srv/sherboa-data"
+FILESYSTEM_TYPE="ext4"
+FILESYSTEM_LABEL="sherboa-data"
+MAX_ATTEMPTS=180
+RETRY_INTERVAL=2
+
+LOG_FILE="/var/log/sherboa-data-volume.log"
+
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+echo "Starting Sherboa data volume initialization."
+echo "Expected EBS volume: $DATA_VOLUME_ID"
+
+# ------------------------------------------------------------------------------
+# Identify EBS volume by its stable Volume ID
+# ------------------------------------------------------------------------------
+
+EXPECTED_SERIAL="$(printf '%s' "$DATA_VOLUME_ID" | tr -d '-')"
+DEVICE=""
+
+for ((attempt = 1; attempt <= MAX_ATTEMPTS; attempt++)); do
+
+  for block_device in /dev/nvme*n1; do
+
+    [[ -b "$block_device" ]] || continue
+
+    SERIAL="$(lsblk -dn -o SERIAL "$block_device" | tr -d '[:space:]-')"
+
+    if [[ "$SERIAL" == "$EXPECTED_SERIAL" ]]; then
+      DEVICE="$block_device"
+      break 2
+    fi
+
+  done
+
+  echo "Waiting for EBS volume attachment ($attempt/$MAX_ATTEMPTS)..."
+  sleep "$RETRY_INTERVAL"
+
+done
+
+if [[ -z "$DEVICE" ]]; then
+  echo "ERROR: Expected EBS volume was not found."
+  exit 1
+fi
+
+echo "Identified EBS volume: $DEVICE"
+
+# ------------------------------------------------------------------------------
+# Inspect existing filesystem
+# ------------------------------------------------------------------------------
+
+if ! SIGNATURES="$(wipefs --no-act --noheadings "$DEVICE")"; then
+  echo "ERROR: Unable to inspect block device signatures."
+  exit 1
+fi
+
+if [[ -z "$SIGNATURES" ]]; then
+
+  echo "No filesystem signatures found."
+  echo "Initializing new ext4 filesystem."
+
+  mkfs.ext4 -L "$FILESYSTEM_LABEL" "$DEVICE"
+
+else
+
+  echo "Existing block device signatures detected."
+
+  EXISTING_FILESYSTEM="$(blkid -o value -s TYPE "$DEVICE" || true)"
+
+  if [[ "$EXISTING_FILESYSTEM" != "$FILESYSTEM_TYPE" ]]; then
+    echo "ERROR: Unsupported or unexpected filesystem."
+    echo "Refusing to format the existing volume."
+    exit 1
+  fi
+
+  echo "Existing ext4 filesystem detected. Preserving data."
+
+fi
+
+# ------------------------------------------------------------------------------
+# Retrieve filesystem UUID
+# ------------------------------------------------------------------------------
+
+FILESYSTEM_UUID="$(blkid -s UUID -o value "$DEVICE")"
+
+if [[ -z "$FILESYSTEM_UUID" ]]; then
+  echo "ERROR: Unable to retrieve filesystem UUID."
+  exit 1
+fi
+
+echo "Filesystem UUID: $FILESYSTEM_UUID"
+
+# ------------------------------------------------------------------------------
+# Prepare mount point
+# ------------------------------------------------------------------------------
+
+install -d -m 0750 "$MOUNT_POINT"
+
+if findmnt --mountpoint "$MOUNT_POINT" >/dev/null 2>&1; then
+
+  MOUNTED_UUID="$(findmnt -n -o UUID --target "$MOUNT_POINT")"
+
+  if [[ "$MOUNTED_UUID" != "$FILESYSTEM_UUID" ]]; then
+    echo "ERROR: Another filesystem is mounted at $MOUNT_POINT."
+    exit 1
+  fi
+
+  echo "Expected filesystem is already mounted."
+
+else
+
+  if find "$MOUNT_POINT" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
+    echo "ERROR: Mount point is not empty."
+    exit 1
+  fi
+
+fi
+
+# ------------------------------------------------------------------------------
+# Configure persistent mount through /etc/fstab
+# ------------------------------------------------------------------------------
+
+FSTAB_ENTRY="UUID=$FILESYSTEM_UUID $MOUNT_POINT $FILESYSTEM_TYPE defaults,nofail 0 2"
+
+EXISTING_ENTRY="$(awk -v mount="$MOUNT_POINT" \
+  '$2 == mount && $0 !~ /^[[:space:]]*#/ {print}' /etc/fstab)"
+
+if [[ -n "$EXISTING_ENTRY" ]]; then
+
+  if [[ "$EXISTING_ENTRY" != "$FSTAB_ENTRY" ]]; then
+    echo "ERROR: Conflicting /etc/fstab entry detected."
+    exit 1
+  fi
+
+else
+
+  echo "$FSTAB_ENTRY" >> /etc/fstab
+
+fi
+
+systemctl daemon-reload
+
+# ------------------------------------------------------------------------------
+# Mount and verify
+# ------------------------------------------------------------------------------
+
+if ! findmnt --mountpoint "$MOUNT_POINT" >/dev/null 2>&1; then
+  mount "$MOUNT_POINT"
+fi
+
+MOUNTED_UUID="$(findmnt -n -o UUID --target "$MOUNT_POINT")"
+
+if [[ "$MOUNTED_UUID" != "$FILESYSTEM_UUID" ]]; then
+  echo "ERROR: Mounted filesystem UUID verification failed."
+  exit 1
+fi
+
+echo "Sherboa data volume successfully mounted."
+echo "Mount point: $MOUNT_POINT"
+echo "Filesystem: $FILESYSTEM_TYPE"
+echo "Volume ID: $DATA_VOLUME_ID"
