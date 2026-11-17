@@ -39,3 +39,35 @@ variable "public_subnet_cidr" {
   type        = string
   default     = "10.0.1.0/24"
 }
+
+
+# ------------------------------------------------------------------------------
+# Security configuration
+# ------------------------------------------------------------------------------
+
+variable "cloudflare_ipv4_cidrs" {
+  description = "Cloudflare IPv4 CIDR ranges allowed to access the production origin."
+  type        = set(string)
+}
+
+
+# ------------------------------------------------------------------------------
+# Compute configuration
+# ------------------------------------------------------------------------------
+
+variable "instance_name" {
+  description = "Name assigned to the production EC2 instance."
+  type        = string
+  default     = "sherboa-vm-02"
+}
+
+variable "iam_instance_profile_name" {
+  description = "Name of the IAM instance profile attached to the EC2 instance."
+  type        = string
+  default     = "SherboaEC2InstanceProfile"
+}
+
+variable "data_volume_size" {
+  description = "Size of the separate data EBS volume in GiB."
+  type        = number
+}

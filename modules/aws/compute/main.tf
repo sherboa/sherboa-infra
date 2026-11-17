@@ -13,11 +13,37 @@ data "aws_subnet" "selected" {
 }
 
 # ------------------------------------------------------------------------------
-# Ubuntu AMI
+# Ubuntu AMI — Canonical
 # ------------------------------------------------------------------------------
 
-data "aws_ssm_parameter" "ubuntu_ami" {
-  name = var.ami_ssm_parameter
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-resolute-26.04-arm64-server-*"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = ["arm64"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
 }
 
 # ------------------------------------------------------------------------------
@@ -25,7 +51,7 @@ data "aws_ssm_parameter" "ubuntu_ami" {
 # ------------------------------------------------------------------------------
 
 resource "aws_instance" "sherboa" {
-  ami                    = data.aws_ssm_parameter.ubuntu_ami.value
+  ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
   subnet_id              = var.subnet_id
   vpc_security_group_ids = var.security_group_ids

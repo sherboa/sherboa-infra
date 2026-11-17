@@ -33,11 +33,6 @@ variable "name" {
   type        = string
 }
 
-variable "ami_ssm_parameter" {
-  description = "SSM parameter containing the Ubuntu AMI ID."
-  type        = string
-}
-
 variable "subnet_id" {
   description = "ID of the subnet where the EC2 instance will be deployed."
   type        = string

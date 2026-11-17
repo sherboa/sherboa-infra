@@ -18,6 +18,8 @@ DATA_VOLUME_ID="${data_volume_id}"
 MOUNT_POINT="/srv/sherboa-data"
 FILESYSTEM_TYPE="ext4"
 FILESYSTEM_LABEL="sherboa-data"
+DATA_DIR_UID="10001"
+DATA_DIR_GID="10001"
 MAX_ATTEMPTS=180
 RETRY_INTERVAL=2
 
@@ -176,3 +178,11 @@ echo "Sherboa data volume successfully mounted."
 echo "Mount point: $MOUNT_POINT"
 echo "Filesystem: $FILESYSTEM_TYPE"
 echo "Volume ID: $DATA_VOLUME_ID"
+
+# ------------------------------------------------------------------------------
+# Set data directory ownership
+# ------------------------------------------------------------------------------
+
+chown "$DATA_DIR_UID:$DATA_DIR_GID" "$MOUNT_POINT"
+
+echo "Data directory ownership configured."
