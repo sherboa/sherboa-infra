@@ -47,3 +47,24 @@ module "compute" {
 
   data_volume_size = var.data_volume_size
 }
+
+
+# ==============================================================================
+# IAM
+# ==============================================================================
+
+module "iam" {
+  source = "../../../modules/aws/iam"
+
+  role_name             = "SherboaEC2Role"
+  instance_profile_name = var.iam_instance_profile_name
+
+  ecr_repository_arn = "arn:aws:ecr:us-east-1:557643338880:repository/sherboa-engine"
+
+  operator_policy_name = "SherboaSSMVM02SessionAccess"
+  operator_user_name   = "juan"
+
+  ec2_instance_arn = "arn:aws:ec2:us-east-1:557643338880:instance/i-082236ea5c1088e9f"
+  aws_region       = "us-east-1"
+  aws_account_id = "557643338880"
+}
