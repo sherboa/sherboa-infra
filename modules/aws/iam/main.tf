@@ -97,7 +97,8 @@ resource "aws_iam_policy" "operator_ssm_access" {
         Action = ["ssm:StartSession"]
         Resource = [
           var.ec2_instance_arn,
-          "arn:aws:ssm:${var.aws_region}:${var.aws_account_id}:document/SSM-SessionManagerRunShell"
+          "arn:aws:ssm:${var.aws_region}:${var.aws_account_id}:document/SSM-SessionManagerRunShell",
+          "arn:aws:ssm:${var.aws_region}::document/AWS-StartSSHSession"
         ]
       },
       {

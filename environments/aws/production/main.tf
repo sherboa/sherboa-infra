@@ -64,7 +64,7 @@ module "iam" {
   operator_policy_name = "SherboaSSMVM02SessionAccess"
   operator_user_name   = "juan"
 
-  ec2_instance_arn = "arn:aws:ec2:us-east-1:557643338880:instance/i-082236ea5c1088e9f"
+  ec2_instance_arn = "arn:aws:ec2:us-east-1:557643338880:instance/i-0cbc0ada0ece6db4c"
   aws_region       = "us-east-1"
-  aws_account_id = "557643338880"
+  aws_account_id   = "557643338880"
 }

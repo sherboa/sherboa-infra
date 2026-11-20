@@ -1,0 +1,35 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DescribeManagedInstances",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:DescribeInstanceInformation"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "StartSessionOnVM02",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:StartSession"
+      ],
+      "Resource": [
+        "arn:aws:ec2:us-east-1:557643338880:instance/i-0cbc0ada0ece6db4c",
+        "arn:aws:ssm:us-east-1:557643338880:document/SSM-SessionManagerRunShell",
+        "arn:aws:ssm:us-east-1::document/AWS-StartSSHSession"
+      ]
+    },
+    {
+      "Sid": "ManageOwnSessions",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:ResumeSession",
+        "ssm:TerminateSession",
+        "ssmmessages:OpenDataChannel"
+      ],
+      "Resource": "arn:aws:ssm:*:*:session/${aws:userid}-*"
+    }
+  ]
+}

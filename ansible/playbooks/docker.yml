@@ -1,0 +1,15 @@
+---
+- name: Install and configure Docker
+  hosts: sherboa
+  become: true
+  gather_facts: true
+
+  vars:
+    docker_apt_arch: >-
+      {{ {'x86_64': 'amd64', 'aarch64': 'arm64'}.get(
+         ansible_facts.architecture,
+         ansible_facts.architecture
+      ) }}
+
+  roles:
+    - docker

@@ -1,0 +1,12 @@
+---
+#SPDX-License-Identifier: MIT-0
+- name: Read current system timezone
+  ansible.builtin.command:
+    cmd: timedatectl show --property=Timezone --value
+  register: current_timezone
+  changed_when: false
+
+- name: Configure system timezone
+  ansible.builtin.command:
+    cmd: "timedatectl set-timezone {{ system_timezone }}"
+  when: current_timezone.stdout != system_timezone
