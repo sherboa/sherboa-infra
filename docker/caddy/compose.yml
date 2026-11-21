@@ -1,0 +1,38 @@
+services:
+  caddy:
+    image: caddy:2.11.4
+    container_name: caddy
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+
+    volumes:
+      - /opt/sherboa/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/sherboa-caddy/data:/data
+      - /srv/sherboa-caddy/config:/config
+
+    networks:
+      sherboa-network:
+        ipv4_address: 172.30.0.2
+
+    command:
+      - caddy
+      - run
+      - --config
+      - /etc/caddy/Caddyfile
+      - --adapter
+      - caddyfile
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  sherboa-network:
+    external: true
+    name: sherboa-network
