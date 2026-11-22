@@ -1,0 +1,9 @@
+---
+- name: Prepare Sherboa Docker stack
+  hosts: sherboa
+  become: true
+  gather_facts: true
+
+  roles:
+    - sherboa-stack
+

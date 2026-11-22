@@ -1,0 +1,81 @@
+---
+# Install dependencies required by community.docker
+- name: Install Docker module dependencies
+  ansible.builtin.apt:
+    name:
+      - python3-requests
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+# Create Sherboa configuration directories
+- name: Create Sherboa configuration directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ sherboa_root_dir }}"
+    - "{{ sherboa_caddy_dir }}"
+    - "{{ sherboa_engine_dir }}"
+
+# Create persistent data directories
+- name: Create Caddy persistent directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /srv/sherboa-caddy
+    - "{{ sherboa_caddy_data_dir }}"
+    - "{{ sherboa_caddy_config_dir }}"
+
+- name: Create Engine persistent data directory
+  ansible.builtin.file:
+    path: "{{ sherboa_engine_data_dir }}"
+    state: directory
+    owner: "{{ sherboa_engine_uid }}"
+    group: "{{ sherboa_engine_gid }}"
+    mode: "0750"
+
+# Deploy Docker Compose and Caddy configuration files
+- name: Deploy Caddy Compose file
+  ansible.builtin.copy:
+    src: "{{ sherboa_caddy_compose_src }}"
+    dest: "{{ sherboa_caddy_dir }}/compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Caddyfile
+  ansible.builtin.copy:
+    src: "{{ sherboa_caddyfile_src }}"
+    dest: "{{ sherboa_caddy_dir }}/Caddyfile"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy Engine Compose file
+  ansible.builtin.copy:
+    src: "{{ sherboa_engine_compose_src }}"
+    dest: "{{ sherboa_engine_dir }}/compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+
+# Ensure Sherboa Docker network exists
+- name: Ensure Sherboa Docker network exists
+  community.docker.docker_network:
+    name: "{{ sherboa_docker_network }}"
+    driver: bridge
+    ipam_config:
+      - subnet: "{{ sherboa_docker_network_subnet }}"
+        gateway: "{{ sherboa_docker_network_gateway }}"
+    appends: true
+    force: false
+    state: present
+

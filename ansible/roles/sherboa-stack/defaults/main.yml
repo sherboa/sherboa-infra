@@ -1,0 +1,27 @@
+---
+# Sherboa stack configuration
+sherboa_root_dir: /opt/sherboa
+
+# Docker Compose configuration
+sherboa_caddy_dir: "{{ sherboa_root_dir }}/caddy"
+sherboa_engine_dir: "{{ sherboa_root_dir }}/sherboa-engine"
+
+# Persistent data directories
+sherboa_engine_data_dir: /srv/sherboa-data
+sherboa_caddy_data_dir: /srv/sherboa-caddy/data
+sherboa_caddy_config_dir: /srv/sherboa-caddy/config
+
+# Container ownership
+sherboa_engine_uid: 10001
+sherboa_engine_gid: 10001
+
+# Docker network
+sherboa_docker_network: sherboa-network
+sherboa_docker_network_subnet: 172.30.0.0/24
+sherboa_docker_network_gateway: 172.30.0.1
+
+# Configuration source files
+sherboa_caddy_compose_src: "{{ playbook_dir }}/../../docker/caddy/compose.yml"
+sherboa_caddyfile_src: "{{ playbook_dir }}/../../docker/caddy/Caddyfile"
+sherboa_engine_compose_src: "{{ playbook_dir }}/../../docker/sherboa-engine/compose.yml"
+
